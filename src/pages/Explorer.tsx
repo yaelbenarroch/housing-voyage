@@ -1,4 +1,5 @@
-// Replace DataBar with BarChart or another suitable icon
+
+// Replace DataBar with BarChart3 or another suitable icon
 import { BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import React, { useState, useEffect, useCallback } from 'react';
@@ -27,15 +28,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import Layout from "@/components/common/Layout";
 
+interface TooltipProps {
+    active?: boolean;
+    payload?: any[];
+    label?: string;
+}
+
 const Explorer = () => {
-    const [data, setData] = useState([]);
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<Error | null>(null);
     const [selectedNeighborhood, setSelectedNeighborhood] = useState('All');
     const [priceRange, setPriceRange] = useState([0, 755000]);
     const [sqFtRange, setSqFtRange] = useState([0, 5642]);
-    const [filteredData, setFilteredData] = useState([]);
-    const [tooltipContent, setTooltipContent] = useState(null);
+    const [filteredData, setFilteredData] = useState<any[]>([]);
+    const [tooltipContent, setTooltipContent] = useState<React.ReactNode>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -49,7 +56,7 @@ const Explorer = () => {
                 setData(jsonData);
                 setFilteredData(jsonData);
             } catch (e) {
-                setError(e);
+                setError(e as Error);
             } finally {
                 setLoading(false);
             }
@@ -59,6 +66,8 @@ const Explorer = () => {
     }, []);
 
     useEffect(() => {
+        if (data.length === 0) return;
+        
         let newFilteredData = data;
 
         if (selectedNeighborhood !== 'All') {
@@ -76,21 +85,21 @@ const Explorer = () => {
         setFilteredData(newFilteredData);
     }, [selectedNeighborhood, priceRange, sqFtRange, data]);
 
-    const neighborhoodOptions = ['All', ...new Set(data.map(item => item.Neighborhood))];
+    const neighborhoodOptions = ['All', ...Array.from(new Set(data.map(item => item.Neighborhood)))];
 
-    const handleNeighborhoodChange = (value) => {
+    const handleNeighborhoodChange = (value: string) => {
         setSelectedNeighborhood(value);
     };
 
-    const handlePriceRangeChange = (value) => {
+    const handlePriceRangeChange = (value: number[]) => {
         setPriceRange(value);
     };
 
-    const handleSqFtRangeChange = (value) => {
+    const handleSqFtRangeChange = (value: number[]) => {
         setSqFtRange(value);
     };
 
-    const CustomTooltip = ({ active, payload }) => {
+    const CustomTooltip = ({ active, payload }: TooltipProps) => {
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             return (
@@ -106,7 +115,7 @@ const Explorer = () => {
         return null;
     };
 
-    const handleMouseEnter = (entry) => {
+    const handleMouseEnter = (entry: any) => {
         setTooltipContent(
             <>
                 <p className="label">{`Overall Quality: ${entry.OverallQual}`}</p>
@@ -115,7 +124,7 @@ const Explorer = () => {
         );
     };
 
-    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
         const RADIAN = Math.PI / 180;
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
         const x = cx + radius * Math.cos(-midAngle * RADIAN) * 1.07;
@@ -137,11 +146,11 @@ const Explorer = () => {
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-    const sqFtDomain = [Math.min(...data.map(item => item.GrLivArea)), Math.max(...data.map(item => item.GrLivArea))]
-    const priceDomain = [Math.min(...data.map(item => item.SalePrice)), Math.max(...data.map(item => item.SalePrice))]
+    const sqFtDomain = data.length ? [Math.min(...data.map(item => item.GrLivArea)), Math.max(...data.map(item => item.GrLivArea))] : [0, 5642];
+    const priceDomain = data.length ? [Math.min(...data.map(item => item.SalePrice)), Math.max(...data.map(item => item.SalePrice))] : [0, 755000];
 
-    if (loading) return <div>Loading data...</div>;
-    if (error) return <div>Error: {error.message}</div>;
+    if (loading) return <Layout><div className="container py-12 flex justify-center">Loading data...</div></Layout>;
+    if (error) return <Layout><div className="container py-12 flex justify-center">Error: {error.message}</div></Layout>;
 
     return (
         <Layout>
@@ -288,7 +297,7 @@ const Explorer = () => {
                                         dataKey="value"
                                     >
                                         {
-                                            data.map((entry, index) => (
+                                            filteredData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))
                                         }
@@ -301,7 +310,7 @@ const Explorer = () => {
                     </Card>
                 </div>
 
-                <Card>
+                <Card className="mt-6">
                     <CardHeader>
                         <CardTitle>Overall Quality vs. Sale Price</CardTitle>
                         <CardDescription>A bar chart of average sale price by overall quality</CardDescription>
