@@ -1,4 +1,3 @@
-
 import { BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import React, { useState, useEffect } from 'react';
@@ -9,6 +8,7 @@ import RangeFilter from "@/components/explorer/RangeFilter";
 import PriceVsAreaChart from "@/components/explorer/PriceVsAreaChart";
 import NeighborhoodPieChart from "@/components/explorer/NeighborhoodPieChart";
 import QualityPriceBarChart from "@/components/explorer/QualityPriceBarChart";
+import { useToast } from "@/hooks/use-toast";
 
 const Explorer = () => {
     const [data, setData] = useState<any[]>([]);
@@ -19,6 +19,7 @@ const Explorer = () => {
     const [sqFtRange, setSqFtRange] = useState([0, 5642]);
     const [filteredData, setFilteredData] = useState<any[]>([]);
     const [tooltipContent, setTooltipContent] = useState<React.ReactNode>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         const loadData = async () => {
@@ -27,6 +28,14 @@ const Explorer = () => {
                 const jsonData = await fetchHousingData();
                 setData(jsonData);
                 setFilteredData(jsonData);
+                
+                if (jsonData.length <= 20) {
+                    toast({
+                        title: "Using sample data",
+                        description: "We're using sample data because the remote dataset is unavailable.",
+                        duration: 5000,
+                    });
+                }
             } catch (e) {
                 setError(e as Error);
             } finally {
@@ -35,7 +44,7 @@ const Explorer = () => {
         };
 
         loadData();
-    }, []);
+    }, [toast]);
 
     useEffect(() => {
         if (data.length === 0) return;
