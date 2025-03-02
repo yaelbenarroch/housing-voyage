@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/common/Layout";
 import { motion } from "framer-motion";
@@ -34,8 +35,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Helper function to generate a mock prediction based on inputs
+const generateMockPrediction = (
+  overallQual: number,
+  grLivArea: number,
+  garageArea: number,
+  neighborhood: string
+): number => {
+  // Base price
+  let price = 180000;
+  
+  // Overall quality has a big impact (10k per quality point)
+  price += overallQual * 10000;
+  
+  // Living area (price per square foot varies by neighborhood)
+  const pricePerSqFt = 
+    ["NridgHt", "NoRidge", "StoneBr"].includes(neighborhood) ? 150 :
+    ["Crawfor", "Somerst", "Timber"].includes(neighborhood) ? 120 :
+    ["CollgCr", "Veenker", "ClearCr"].includes(neighborhood) ? 100 : 80;
+  
+  price += grLivArea * pricePerSqFt / 100;
+  
+  // Garage area
+  price += garageArea * 50;
+  
+  // Add some randomness (±3%)
+  const randomFactor = 0.97 + Math.random() * 0.06;
+  price *= randomFactor;
+  
+  return Math.round(price);
+};
 
 const Results = () => {
+  const { toast } = useToast();
+  
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -46,6 +81,7 @@ const Results = () => {
   const [neighborhood, setNeighborhood] = useState<string>("NAmes");
   const [predictedPrice, setPredictedPrice] = useState<number | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const neighborhoods = [
     "NAmes",
@@ -110,6 +146,7 @@ const Results = () => {
   ];
 
   const handlePredictPrice = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch("/api/predict", {
         method: "POST",
@@ -128,12 +165,44 @@ const Results = () => {
         const data = await response.json();
         setPredictedPrice(data.predictedPrice);
       } else {
-        console.error("Failed to predict price");
-        setPredictedPrice(null);
+        console.info("HTTP error! status: " + response.status + ". Using mock data instead.");
+        
+        // Generate a mock prediction as fallback
+        const mockPrice = generateMockPrediction(
+          overallQual,
+          grLivArea,
+          garageArea,
+          neighborhood
+        );
+        
+        setPredictedPrice(mockPrice);
+        
+        toast({
+          title: "Using simulated prediction",
+          description: "The prediction API is unavailable. Using a simulated model instead.",
+          variant: "default",
+        });
       }
     } catch (error) {
       console.error("Error:", error);
-      setPredictedPrice(null);
+      
+      // Generate a mock prediction as fallback
+      const mockPrice = generateMockPrediction(
+        overallQual,
+        grLivArea,
+        garageArea,
+        neighborhood
+      );
+      
+      setPredictedPrice(mockPrice);
+      
+      toast({
+        title: "Using simulated prediction",
+        description: "The prediction API is unavailable. Using a simulated model instead.",
+        variant: "default",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -236,7 +305,9 @@ const Results = () => {
                     ))}
                   </select>
                 </div>
-                <Button onClick={handlePredictPrice}>Predict Price</Button>
+                <Button onClick={handlePredictPrice} disabled={isLoading}>
+                  {isLoading ? "Calculating..." : "Predict Price"}
+                </Button>
               </CardContent>
             </Card>
 
@@ -250,9 +321,9 @@ const Results = () => {
                 </CardHeader>
                 <CardContent className="grid gap-4">
                   <div className="text-2xl font-bold">
-                    ${predictedPrice.toFixed(2)}
+                    ${predictedPrice.toLocaleString()}
                   </div>
-                  <Button onClick={handleCopyToClipboard} disabled={isCopied}>
+                  <Button onClick={handleCopyToClipboard} disabled={isCopied} variant="outline">
                     {isCopied ? (
                       <>
                         <Check className="mr-2 h-4 w-4" />
