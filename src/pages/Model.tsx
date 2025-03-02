@@ -1,8 +1,10 @@
 
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 import Layout from "@/components/common/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { useToast } from "@/hooks/use-toast";
 
 const featureImportanceData = [
   { feature: "GrLivArea", importance: 0.287 },
@@ -25,7 +27,34 @@ const modelComparisonData = [
   { model: "Neural Network", accuracy: 0.85, rmse: 32567, interpretability: 0.1 }
 ];
 
+// Fallback images from Unsplash
+const fallbackImages = {
+  shap: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=1200&h=800",
+  decisionTree: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&h=800"
+};
+
 const Model = () => {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check images and show toast if they fail to load
+    const checkImage = (url: string, imageName: string) => {
+      const img = new Image();
+      img.onerror = () => {
+        toast({
+          title: "Image Loading Error",
+          description: `Using fallback for ${imageName} visualization. Original images not available.`,
+          variant: "destructive",
+        });
+      };
+      img.src = url;
+    };
+
+    // Check both images
+    checkImage("https://raw.githubusercontent.com/CodingJake/DataVoyage/main/images/shap_summary.png", "SHAP");
+    checkImage("https://raw.githubusercontent.com/CodingJake/DataVoyage/main/images/decision_tree.png", "Decision Tree");
+  }, [toast]);
+
   return (
     <Layout>
       <motion.div
@@ -102,6 +131,10 @@ const Model = () => {
                 src="https://raw.githubusercontent.com/CodingJake/DataVoyage/main/images/shap_summary.png" 
                 alt="SHAP Values Summary Plot" 
                 className="max-w-full h-auto rounded-lg shadow-lg" 
+                onError={(e) => {
+                  e.currentTarget.src = fallbackImages.shap;
+                  e.currentTarget.onerror = null; // Prevent infinite callback
+                }}
               />
             </div>
             <p className="text-sm text-muted-foreground mt-4">
@@ -125,6 +158,10 @@ const Model = () => {
                 src="https://raw.githubusercontent.com/CodingJake/DataVoyage/main/images/decision_tree.png" 
                 alt="Decision Tree Visualization" 
                 className="max-w-full h-auto rounded-lg shadow-lg" 
+                onError={(e) => {
+                  e.currentTarget.src = fallbackImages.decisionTree;
+                  e.currentTarget.onerror = null; // Prevent infinite callback
+                }}
               />
             </div>
             <p className="text-sm text-muted-foreground mt-4">
@@ -139,3 +176,4 @@ const Model = () => {
 };
 
 export default Model;
+
