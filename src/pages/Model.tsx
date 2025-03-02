@@ -52,9 +52,9 @@ const Model = () => {
                   margin={{ top: 20, right: 30, left: 90, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 0.3]} tickFormatter={(value) => `${(value * 100).toFixed(0)}%`} />
+                  <XAxis type="number" domain={[0, 0.3]} tickFormatter={(value) => `${(Number(value) * 100).toFixed(0)}%`} />
                   <YAxis type="category" dataKey="feature" width={80} />
-                  <Tooltip formatter={(value) => `${(value * 100).toFixed(1)}%`} />
+                  <Tooltip formatter={(value) => `${(Number(value) * 100).toFixed(1)}%`} />
                   <Legend />
                   <Bar dataKey="importance" fill="#8884d8" name="Importance" />
                 </BarChart>
@@ -77,7 +77,7 @@ const Model = () => {
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="model" angle={-45} textAnchor="end" height={60} />
-                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" domain={[0, 1]} tickFormatter={(value) => `${(value * 100).toFixed(0)}%`} />
+                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" domain={[0, 1]} tickFormatter={(value) => `${(Number(value) * 100).toFixed(0)}%`} />
                   <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" domain={[0, 50000]} />
                   <Tooltip />
                   <Legend />
